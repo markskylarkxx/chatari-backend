@@ -1,0 +1,136 @@
+Because you built it correctly. 🔥
+Here's exactly what happened in that one request:
+Customer: "How much is the red dress?"
+        ↓
+Webhook received the message
+        ↓
+Looked up your business in the database
+        ↓
+Fetched ALL your products from the database
+(found: Red Dress — ₦15,000 — In stock)
+        ↓
+Built this system prompt for Groq:
+"You are a customer service assistant for Chatari Test Business...
+Our products:
+  - Red Dress: ₦15,000 — In stock (Beautiful red gown)"
+        ↓
+Groq read the product list and replied:
+"The red dress is ₦15,000 and it's currently in stock."
+        ↓
+Saved the reply to the database
+The AI didn't guess. It read your actual product catalogue from your actual database and used it to answer the customer.
+Add more products and the AI will know about all of them automatically. Change a price and the AI will quote the new price. Mark something as out of stock and the AI will say so.
+This is your product working. Here's where you stand:
+✅ Webhook receiving messages
+✅ AI reading product catalogue
+✅ AI generating smart replies
+✅ Replies saved to database
+⏳ Meta WhatsApp — connect real phone number
+⏳ Frontend dashboard
+The next step is connecting a real WhatsApp number so real customers trigger this flow. Want to do that now?You said: The next step is connecting a real WhatsApp number so real customers trigger this flow.The next step is connecting a real WhatsApp number so real customers trigger this flow. Want to do that now? yes6:44 PMClaude responded: Let's get your real WhatsApp number connected.Let's get your real WhatsApp number connected. This requires a Meta Developer account and goes through a few steps — follow exactly.
+
+Step 1 — Create a Meta Developer Account
+Go to developers.facebook.com → Log in with your Facebook account → Click "Get Started" → Verify your account.
+
+Step 2 — Create a Meta App
+
+Go to developers.facebook.com/apps
+Click "Create App"
+Select "Business" as the app type
+Give it a name — e.g. "Chatari"
+Click "Create App"
+
+
+Step 3 — Add WhatsApp to your App
+
+Inside your new app dashboard, scroll down to find "WhatsApp"
+Click "Set up"
+It will ask you to connect a Meta Business Account — create one free if you don't have one
+Click through until you reach the WhatsApp API Setup page
+
+
+Step 4 — Get your credentials
+On the WhatsApp API Setup page you will see:
+Phone Number ID:     1234567890123
+WhatsApp Business Account ID (WABA ID): 9876543210
+Temporary access token: EAAxxxxxxxxxxxxx
+Copy all three and add to your .env.local:
+envMETA_PHONE_NUMBER_ID=1234567890123
+META_WABA_ID=9876543210
+META_PERMANENT_ACCESS_TOKEN=EAAxxxxxxxxxxxxx
+
+Step 5 — Add a real phone number
+On the same page, click "Add phone number" and add your Nigerian number. Meta will send a verification code via SMS or call. Enter it to verify.
+
+Step 6 — Register your webhook
+
+In your Meta app, go to WhatsApp → Configuration
+Under Webhook, click "Edit"
+You need a public URL — since you're on localhost, run this first:
+
+bashnpx ngrok http 3000
+It gives you a URL like https://abc123.ngrok.io — copy it.
+
+Set Webhook URL to:
+
+https://abc123.ngrok.io/api/webhook
+
+Set Verify Token to:
+
+whatflow_webhook_secret
+
+Click "Verify and Save"
+Under Webhook Fields, click "Manage" and enable "messages"
+
+
+Step 7 — Update your dev business record
+Run this in Supabase SQL Editor — replace the phone number ID with your real one:
+sqlUPDATE "Business"
+SET 
+  "whatsappPhoneId" = 'YOUR_PHONE_NUMBER_ID',
+  "whatsappPhoneNumber" = 'YOUR_NIGERIAN_NUMBER'
+WHERE "id" = 'dev-business-id';
+
+Step 8 — Test with a real message
+Send a WhatsApp message to your registered number from any phone. Watch your terminal — you should see:
+[webhook] Message from 234XXXXXXXXXX: "Hello"
+[webhook] AI reply (Meta not connected yet): "Hello! Welcome to..."
+Wait — at this point Meta IS connected so you'll see:
+[webhook] AI reply sent to 234XXXXXXXXXX
+And the person who sent the message gets an AI reply on WhatsApp.
+
+Start with Step 1 and tell me where you get stuck. The ngrok step (Step 6) is usually where people need help — we'll get through it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Your ngrok URL is:
+https://semifinal-explore-outweigh.ngrok-free.app
+Now go to Meta and register the webhook:
+Step 1 — Go to your Meta app webhook settings:
+Paste this in your browser:
+https://developers.facebook.com/apps/981722160984424/whatsapp-business/wa-dev-console
+Scroll down to find the "Webhook" section and click "Configure" or "Edit".
+Step 2 — Enter these exact values:
+Callback URL:   https://semifinal-explore-outweigh.ngrok-free.app/api/webhook
+Verify token:   whatflow_webhook_secret
+Click "Verify and save".
+Step 3 — Subscribe to messages:
+After saving, click "Manage" next to Webhook fields and enable "messages". Click "Done".
+Step 4 — Make sure your dev server is running in another terminal:
+bashnpm run dev
+When you click "Verify and save" in Meta, it will call your webhook URL to verify it. You should see this in your terminal:
+[webhook] Webhook verified successfully

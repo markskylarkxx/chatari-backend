@@ -1,0 +1,149 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id         String     @id @default(cuid())
+  email      String     @unique
+  name       String?
+  createdAt  DateTime   @default(now())
+  businesses Business[]
+}
+
+model Business {
+  id                  String         @id @default(cuid())
+  name                String
+  whatsappPhoneNumber String?
+  whatsappPhoneId     String?
+  wabaId              String?
+  accessToken         String?
+  webhookVerifyToken  String         @default(cuid())
+  aiPersonality       String?        @default("You are a helpful customer service assistant for a Nigerian small business. Reply in a friendly, professional tone. Keep replies short and clear. You can reply in Pidgin English if the customer messages in Pidgin.")
+  aiEnabled           Boolean        @default(true)
+  plan                String         @default("starter")
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  ownerId             String
+  owner               User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contacts            Contact[]
+  conversations       Conversation[]
+  flows               Flow[]
+  broadcasts          Broadcast[]
+  orders              Order[]
+  products            Product[]
+
+  @@index([ownerId])
+}
+
+model Contact {
+  id            String         @id @default(cuid())
+  phoneNumber   String
+  name          String?
+  createdAt     DateTime       @default(now())
+  businessId    String
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  orders        Order[]
+
+  @@unique([phoneNumber, businessId])
+  @@index([businessId])
+}
+
+model Conversation {
+  id         String    @id @default(cuid())
+  status     String    @default("open")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  businessId String
+  contactId  String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact    Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages   Message[]
+
+  @@index([businessId])
+  @@index([contactId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  waMessageId    String?      @unique
+  direction      String
+  content        String
+  type           String       @default("text")
+  status         String       @default("sent")
+  isAiGenerated  Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  currency    String   @default("NGN")
+  inStock     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model Flow {
+  id         String   @id @default(cuid())
+  name       String
+  trigger    String
+  steps      Json
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  items      Json
+  total      Float?
+  currency   String      @default("NGN")
+  status     String      @default("pending")
+  notes      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  businessId String
+  contactId  String
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact    Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([contactId])
+}
+
+model Broadcast {
+  id          String    @id @default(cuid())
+  message     String
+  status      String    @default("draft")
+  sentCount   Int       @default(0)
+  failCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  scheduledAt DateTime?
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}

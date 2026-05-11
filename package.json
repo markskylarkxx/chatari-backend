@@ -1,0 +1,47 @@
+{
+  "name": "whatflow",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "@hookform/resolvers": "^3.6.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^5.22.0",
+    "@prisma/config": "^7.8.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.43.4",
+    "date-fns": "^3.6.0",
+    "dotenv": "^17.4.2",
+    "dotenv-expand": "^13.0.0",
+    "groq-sdk": "^1.1.2",
+    "next": "14.2.3",
+    "pg": "^8.20.0",
+    "prisma": "^5.22.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-hook-form": "^7.51.5",
+    "recharts": "^2.12.7",
+    "resend": "^3.2.0",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.40",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.3",
+    "typescript": "^5"
+  }
+}
