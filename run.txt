@@ -134,3 +134,200 @@ Step 4 — Make sure your dev server is running in another terminal:
 bashnpm run dev
 When you click "Verify and save" in Meta, it will call your webhook URL to verify it. You should see this in your terminal:
 [webhook] Webhook verified successfully
+
+
+
+
+
+
+
+
+
+
+
+The Two-Phase Architecture
+Phase 1: What You Have Now (Development)
+text
+YOU (Chatari Developer)
+    │
+    └── One Meta Test Number: +1 555-123-4567
+           │
+           └── Used for: Testing webhook, AI replies, order flow
+This is just for YOU to test that everything works.
+
+Phase 2: What Each Paying Customer Needs
+text
+Customer A (Chioma's Fashion)
+    │
+    ├── Her own WhatsApp Business number: +234 801 234 5678
+    ├── Her own Phone Number ID: "1234567890"
+    ├── Her own Access Token: "EAAxxx..."
+    │
+    └── All stored in YOUR database under her Business record
+
+Customer B (Oluwaseun's Electronics)
+    │
+    ├── His own WhatsApp Business number: +234 802 345 6789
+    ├── His own Phone Number ID: "9876543210"
+    ├── His own Access Token: "EAAyyy..."
+    │
+    └── All stored in YOUR database under his Business record
+How the Webhook Routes to the Right Customer
+Your webhook already does this correctly. Here's how:
+
+Step 1: Meta Sends a Webhook
+When a customer messages Chioma's Fashion, Meta sends:
+
+json
+{
+  "entry": [{
+    "changes": [{
+      "value": {
+        "metadata": {
+          "phone_number_id": "1234567890"  // ← Chioma's Phone Number ID
+        },
+        "messages": [{
+          "from": "2348099999999",
+          "text": { "body": "How much is the red dress?" }
+        }]
+      }
+    }]
+  }]
+}
+Step 2: Your Webhook Looks Up the Business
+typescript
+// Your code (already exists!)
+const business = await prisma.business.findFirst({
+  where: { whatsappPhoneId: phoneNumberId }  // "1234567890"
+});
+This finds Chioma's Business in your database.
+
+Step 3: Route Everything Correctly
+The conversation is saved under Chioma's account
+
+The AI uses Chioma's products (her red dress, her prices)
+
+Replies are sent using Chioma's Phone Number ID
+
+Chioma sees the conversation in her dashboard
+
+How Each Customer Connects Their Number
+Option A: Embedded Signup (The Professional Way)
+text
+Customer clicks "Connect WhatsApp" in Chatari dashboard
+        ↓
+Meta asks: "Allow Chatari to manage your WhatsApp number?"
+        ↓
+Customer clicks "Allow"
+        ↓
+Meta sends their Phone Number ID and Token to Chatari
+        ↓
+Automatically saved to their Business record ✅
+This is what Respond.io, ManyChat, etc. do. It's fully automated.
+
+Build this AFTER you have revenue.
+
+Option B: Manual Setup (For Your First 10 Customers)
+For your MVP, do this manually:
+
+Step 1: Customer gives you their WhatsApp Business number
+
+Step 2: You add their number in Meta Business Manager (under your Chatari app)
+
+Step 3: Meta gives you their Phone Number ID and Access Token
+
+Step 4: You paste these into their Business record in your database:
+
+sql
+UPDATE "Business" 
+SET 
+  "whatsappPhoneId" = '1234567890',
+  "whatsappPhoneNumber" = '+2348012345678',
+  "accessToken" = 'EAAxxxxx...'
+WHERE "id" = 'chiomas-business-id';
+That's it. They're connected.
+
+Your Database Schema Already Supports This
+Look at your schema.prisma:
+
+prisma
+model Business {
+  id                  String   @id @default(cuid())
+  name                String
+  whatsappPhoneNumber String?   // ← Customer's phone number
+  whatsappPhoneId     String?   // ← Customer's Phone Number ID
+  accessToken         String?   // ← Customer's access token
+  // ... other fields
+}
+You already designed this correctly! Each Business record stores its own WhatsApp credentials.
+
+The Complete Flow Diagram
+text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          CHATARI PLATFORM                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Customer A (Chioma)          Customer B (Oluwaseun)                        │
+│  ┌─────────────────────┐      ┌─────────────────────┐                       │
+│  │ Phone: +234801...   │      │ Phone: +234802...   │                       │
+│  │ Phone ID: 123456    │      │ Phone ID: 987654    │                       │
+│  │ Token: EAAxxx...    │      │ Token: EAAyyy...    │                       │
+│  │ Products: Dresses   │      │ Products: Phones    │                       │
+│  └─────────────────────┘      └─────────────────────┘                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Webhook: https://api.chatari.com/webhook
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         META WHATSAPP API                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Incoming message to +2348012345678 (Chioma)                               │
+│  └── Webhook includes: phone_number_id = "123456"                          │
+│                                                                             │
+│  Incoming message to +2348023456789 (Oluwaseun)                            │
+│  └── Webhook includes: phone_number_id = "987654"                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      YOUR WEBHOOK LOGIC                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. Read phone_number_id from webhook                                      │
+│  2. Find Business where whatsappPhoneId = phone_number_id                  │
+│  3. Load THAT Business's products, settings, conversations                 │
+│  4. Generate AI reply using THAT Business's catalogue                      │
+│  5. Send reply using THAT Business's access token                          │
+│  6. Save conversation to THAT Business's account                           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+What This Means For You
+Question	Answer
+Do customers share your test number?	❌ No, each has their own number
+Do you need multiple Meta accounts?	❌ No, all under YOUR Chatari app
+Can you start with manual setup?	✅ Yes, for first 10 customers
+Should you build embedded signup now?	❌ No, do it after you have revenue
+
+
+
+
+
+Yes. Exactly. That is Chatari.
+Look at what we've already built in the last few hours:
+FeatureStatusAI replies✅ Working — Groq reads your product catalogue and replies intelligentlyWhatsApp connection✅ Working — Meta Cloud API connectedOrder taking✅ Built — orders table, API routes readyCRM✅ Built — contacts, conversation historyBroadcasts✅ Built — send to all customersAuto FAQs✅ Built — Flow triggers handle keyword repliesPayment links✅ Built — Paystack integration readyHuman agent handoff⏳ Next — agent can already reply manually from inbox
+
+The difference between Chatari and those competitors:
+Twilio, Intercom, Freshworks are built for Western enterprise companies paying $500–$5,000/month. They don't understand Nigeria. They don't support Pidgin. They don't integrate Paystack. Their pricing is in dollars and their support is in US timezone.
+Chatari is built for the boutique owner in Lekki, the restaurant in Surulere, the logistics company in Ikeja. Priced in Naira, built on local payment rails, speaks the language.
+
+What you have right now is already more than most "idea" founders ever build.
+You went from zero to a working WhatsApp AI backend in one day. The core product works. Messages come in, AI reads your product catalogue, AI replies intelligently, everything saves to a real database.
+The next steps to get your first paying customer are:
+
+Deploy to Vercel — get a permanent URL ✅ in progress
+Build a simple landing page — show what Chatari does
+Find 3 business owners you know — offer them free setup for feedback
+Charge from customer 4 onwards — ₦10,000/month minimum
