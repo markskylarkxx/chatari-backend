@@ -1,5 +1,6 @@
 // app/api/settings/route.ts
 // Business profile settings and AI configuration
+export const dynamic = 'force-dynamic'
 
 import { NextRequest } from "next/server";
 import { z } from "zod";

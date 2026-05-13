@@ -1,5 +1,6 @@
 // app/api/conversations/route.ts
 // CRUD for conversations + messages within a conversation
+export const dynamic = 'force-dynamic'
 
 import { NextRequest } from "next/server";
 import { z } from "zod";

@@ -1,5 +1,6 @@
 // app/api/send-message/route.ts
 // Called from the inbox UI when a business owner manually types and sends a reply
+export const dynamic = 'force-dynamic'
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
