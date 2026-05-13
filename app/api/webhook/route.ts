@@ -107,6 +107,8 @@ async function handleIncomingMessage(
     return;
   }
 
+  console.log(`[webhook] Business found: ${business.id} - ${business.name}`);
+
   // 2. Find or create the contact
   const contact = await prisma.contact.upsert({
     where: {
@@ -115,7 +117,7 @@ async function handleIncomingMessage(
         businessId: business.id,
       },
     },
-    update: {}, // no-op update — just return existing
+    update: {},
     create: {
       phoneNumber: senderPhone,
       businessId: business.id,
@@ -140,6 +142,7 @@ async function handleIncomingMessage(
         status: "open",
       },
     });
+    console.log(`[webhook] Created new conversation: ${conversation.id}`);
   } else {
     // Update the updatedAt timestamp so it appears at top of inbox
     await prisma.conversation.update({
@@ -169,12 +172,14 @@ async function handleIncomingMessage(
     },
   });
 
+  console.log(`[webhook] Inbound message saved to DB`);
+
   // Mark message as read (best effort)
   markMessageAsRead(phoneNumberId, waMessageId);
 
   // 5. Check if AI is disabled for this business
   if (!business.aiEnabled) {
-    console.log(`[webhook] AI disabled for business ${business.id}`);
+    console.log(`[webhook] AI disabled for business ${business.id} — no reply sent`);
     return;
   }
 
@@ -199,35 +204,32 @@ async function handleIncomingMessage(
   }
 
   // 7. No flow matched — use AI to generate a reply
+  console.log(`[webhook] Generating AI reply...`);
+  
   const aiContext = await buildAIContext(business.id);
-  if (!aiContext) return;
+  if (!aiContext) {
+    console.log(`[webhook] Failed to build AI context`);
+    return;
+  }
 
   const history = await getConversationHistory(conversation.id, 10);
   const reply = await generateAIReply(aiContext, messageText, history);
+  
+  console.log(`[webhook] AI reply generated: "${reply}"`);
 
-  // Send the reply via WhatsApp
-  // await sendWhatsAppMessage(phoneNumberId, senderPhone, reply);
-
-  // if (process.env.META_PERMANENT_ACCESS_TOKEN) {
-  //   await sendWhatsAppMessage(phoneNumberId, senderPhone, reply);
-  // } else {
-  //   console.log(`[webhook] AI reply (Meta not connected yet): "${reply}"`);
-  // }
-
-
+  // 8. Send the reply via WhatsApp
   if (process.env.META_PERMANENT_ACCESS_TOKEN) {
     try {
       await sendWhatsAppMessage(phoneNumberId, senderPhone, reply);
       console.log(`[webhook] AI reply sent to ${senderPhone}`);
     } catch (err) {
-      // Meta rejected the send (e.g. app unpublished, token expired)
-      // But we still save the message to DB below
       console.error(`[webhook] Failed to send WhatsApp message:`, err);
     }
   } else {
-    console.log(`[webhook] AI reply (Meta not connected yet): "${reply}"`);
+    console.log(`[webhook] META_PERMANENT_ACCESS_TOKEN not set — skipping send`);
   }
-  // Save outbound message to DB
+  
+  // 9. Save outbound message to DB
   await prisma.message.create({
     data: {
       direction: "outbound",
@@ -239,7 +241,7 @@ async function handleIncomingMessage(
     },
   });
 
-  console.log(`[webhook] AI reply sent to ${senderPhone}`);
+  console.log(`[webhook] Outbound message saved to DB`);
 }
 
 // ─── Execute a conversation flow ──────────────────────────────────────────────
