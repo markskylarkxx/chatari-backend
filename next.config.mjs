@@ -4,7 +4,7 @@ const nextConfig = {
     serverComponentsExternalPackages: ["@prisma/client", "prisma"],
   },
   // This prevents Vercel from trying to pre-render API routes at build time
-  output: "standalone",
+  //output: "standalone",
 };
 
 export default nextConfig;
