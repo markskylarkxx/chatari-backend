@@ -152,7 +152,8 @@ async function handleIncomingMessage(
   }
 
   // 4. Save the inbound message (deduplicate by waMessageId)
-  const existingMessage = await prisma.message.findUnique({
+  // FIXED: Changed from findUnique to findFirst
+  const existingMessage = await prisma.message.findFirst({
     where: { waMessageId },
   });
 
