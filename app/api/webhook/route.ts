@@ -208,12 +208,25 @@ async function handleIncomingMessage(
   // Send the reply via WhatsApp
   // await sendWhatsAppMessage(phoneNumberId, senderPhone, reply);
 
+  // if (process.env.META_PERMANENT_ACCESS_TOKEN) {
+  //   await sendWhatsAppMessage(phoneNumberId, senderPhone, reply);
+  // } else {
+  //   console.log(`[webhook] AI reply (Meta not connected yet): "${reply}"`);
+  // }
+
+
   if (process.env.META_PERMANENT_ACCESS_TOKEN) {
-    await sendWhatsAppMessage(phoneNumberId, senderPhone, reply);
+    try {
+      await sendWhatsAppMessage(phoneNumberId, senderPhone, reply);
+      console.log(`[webhook] AI reply sent to ${senderPhone}`);
+    } catch (err) {
+      // Meta rejected the send (e.g. app unpublished, token expired)
+      // But we still save the message to DB below
+      console.error(`[webhook] Failed to send WhatsApp message:`, err);
+    }
   } else {
     console.log(`[webhook] AI reply (Meta not connected yet): "${reply}"`);
   }
-
   // Save outbound message to DB
   await prisma.message.create({
     data: {
